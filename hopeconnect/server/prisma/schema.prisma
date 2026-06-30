@@ -1,0 +1,90 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Define the distinct roles interacting with the platform
+enum Role {
+  ADMIN
+  INDIVIDUAL_DONOR
+  RESTAURANT
+  HOSPITAL
+  NGO
+  OLD_AGE_HOME
+}
+
+// Completely non-monetary physical resource types
+enum ResourceType {
+  FOOD
+  MEDICAL_SUPPLY
+  SHELTER
+}
+
+enum Status {
+  PENDING
+  ACCEPTED
+  IN_TRANSIT
+  DELIVERED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  password  String
+  role      Role
+  verified  Boolean  @default(false) 
+  
+  // Profile Fields
+  phone     String?
+  location  String?
+  bio       String?
+  avatarUrl String?
+  
+  createdAt DateTime @default(now())
+  
+  // Relations
+  donations Resource[] @relation("Donor")
+  requests  Resource[] @relation("Beneficiary")
+  logs      AuditLog[]
+}
+
+model Resource {
+  id            String       @id @default(uuid())
+  title         String
+  type          ResourceType
+  quantity      Int          
+  location      String       // ─── CRITICAL FIX: Added this missing tracking column ───
+  description   String?
+  imageUrl      String?
+  status        Status       @default(PENDING)
+  isEmergency   Boolean      @default(false) 
+  
+  // Relations
+  donorId       String
+  donor         User         @relation("Donor", fields: [donorId], references: [id])
+  
+  beneficiaryId String?
+  beneficiary   User?        @relation("Beneficiary", fields: [beneficiaryId], references: [id])
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+  logs          AuditLog[]
+}
+
+// Immutable table to track resource movement and ensure accountability
+model AuditLog {
+  id          String    @id @default(uuid())
+  action      String    
+  description String
+  resourceId  String?
+  resource    Resource? @relation(fields: [resourceId], references: [id])
+  userId      String?
+  user        User?     @relation(fields: [userId], references: [id])
+  createdAt   DateTime  @default(now())
+}
