@@ -22,12 +22,11 @@ app.use(helmet({
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
-    'https://hopeconnect-web.onrender.com' // Cleaned string without trailing slash
+    'https://hopeconnect-web.onrender.com'
 ];
 
 const corsOptions = {
     origin: function (origin, callback) {
-        // Allow requests with no origin (e.g. server-to-server, Postman, health checks)
         if (!origin) return callback(null, true);
 
         // Sanitize incoming origin by stripping any trailing slashes or subpaths
@@ -36,16 +35,15 @@ const corsOptions = {
         if (allowedOrigins.includes(sanitizedOrigin) || sanitizedOrigin.endsWith('.onrender.com')) {
             return callback(null, true);
         }
-        return callback(null, true); // Staging fallback
+        return callback(null, true);
     },
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
 };
 
-// Apply CORS options globally & handle preflight OPTIONS requests
+// Apply CORS options globally (automatically intercepts and approves preflight OPTIONS requests)
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
 
 // 3. Rate Limiting (150 requests per 15 minutes per IP)
 const limiter = rateLimit({
