@@ -16,6 +16,11 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
+app.use(cors({
+  origin: '*', // Allows requests from your deployed Vercel frontend
+  credentials: true
+}));
+
 // 2. Rate Limiting (Limits requests from the same IP)
 const limiter = rateLimit({
     max: 100, // Limit each IP to 100 requests per windowMs
