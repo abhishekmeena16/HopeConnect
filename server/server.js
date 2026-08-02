@@ -17,16 +17,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-    origin: function (origin, callback) {
-        // Allow server-to-server requests or tools like Postman (where origin is undefined)
-        if (!origin) return callback(null, true);
-        
-        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.onrender.com')) {
-            return callback(null, true);
-        } else {
-            return callback(null, true); // Fallback to allow connection during initial deployment
-        }
-    },
+    origin: true, // Automatically reflects the requesting origin (Vercel/Render/Localhost)
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
     allowedHeaders: ['Content-Type', 'Authorization']
