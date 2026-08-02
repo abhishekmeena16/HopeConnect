@@ -17,10 +17,26 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: '*',
-  credentials: true
+    origin: function (origin, callback) {
+        // Allow server-to-server requests or tools like Postman (where origin is undefined)
+        if (!origin) return callback(null, true);
+        
+        if (allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.onrender.com')) {
+            return callback(null, true);
+        } else {
+            return callback(null, true); // Fallback to allow connection during initial deployment
+        }
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
 }));
 
+const allowedOrigins = [
+    'http://localhost:5173',
+    'http://localhost:3000',
+    'https://hopeconnect-web.onrender.com/' // Your deployed Vercel/Render frontend
+];
 // 2. Rate Limiting (Limits requests from the same IP)
 const limiter = rateLimit({
     max: 100, // Limit each IP to 100 requests per windowMs
