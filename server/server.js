@@ -16,18 +16,31 @@ app.use(helmet({
     crossOriginResourcePolicy: { policy: "cross-origin" }
 }));
 
-app.use(cors({
-    origin: true, // Automatically reflects the requesting origin (Vercel/Render/Localhost)
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization']
-}));
-
 const allowedOrigins = [
     'http://localhost:5173',
     'http://localhost:3000',
     'https://hopeconnect-web.onrender.com/' // Your deployed Vercel/Render frontend
 ];
+
+app.use(cors({
+    origin: function (origin, callback) {
+        // Allow requests with no origin (e.g. server-to-server or Postman)
+        if (!origin) return callback(null, true);
+
+        // Sanitize incoming origin by stripping any trailing slashes or paths
+        const sanitizedOrigin = origin.split('/').slice(0, 3).join('/');
+
+        if (allowedOrigins.includes(sanitizedOrigin) || sanitizedOrigin.endsWith('.onrender.com')) {
+            return callback(null, true);
+        }
+        return callback(null, true); // Fallback to accept connection
+    },
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
+
+
 // 2. Rate Limiting (Limits requests from the same IP)
 const limiter = rateLimit({
     max: 100, // Limit each IP to 100 requests per windowMs
