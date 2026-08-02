@@ -17,7 +17,7 @@ app.use(helmet({
 }));
 
 app.use(cors({
-  origin: 'https://hopeconnect-web.onrender.com/register',
+  origin: '*',
   credentials: true
 }));
 
