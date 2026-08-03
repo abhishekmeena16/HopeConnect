@@ -56,9 +56,9 @@ exports.register = async (req, res) => {
     try {
         const { name, email, password, role } = req.body;
 
-        // 1. Basic Field Validation
-        if (!name || !email || !password) {
-            return res.status(400).json({ error: "Name, email, and password are required." });
+        // 1. Strict Type & Field Validation
+        if (!name || !email || !password || typeof email !== 'string') {
+            return res.status(400).json({ error: "Valid name, email address, and password are required." });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
@@ -75,21 +75,21 @@ exports.register = async (req, res) => {
 
         // 4. Role Enum Fallback & Validation
         const validRoles = ['ADMIN', 'INDIVIDUAL_DONOR', 'RESTAURANT', 'HOSPITAL', 'NGO', 'OLD_AGE_HOME'];
-        const userRole = (role && validRoles.includes(role.toUpperCase())) 
-            ? role.toUpperCase() 
+        const userRole = (role && validRoles.includes(String(role).toUpperCase())) 
+            ? String(role).toUpperCase() 
             : 'INDIVIDUAL_DONOR';
 
         // 5. Create User Record in Database
         const newUser = await prisma.user.create({
             data: {
-                name: name.trim(),
+                name: String(name).trim(),
                 email: normalizedEmail,
                 password: hashedPassword,
                 role: userRole
             }
         });
 
-        // 6. Token Generation & Cookie Cookie Dispatch
+        // 6. Token Generation & Cookie Dispatch
         const token = generateTokenAndSetCookie(newUser.id, newUser.role, res);
 
         res.status(201).json({
@@ -97,7 +97,7 @@ exports.register = async (req, res) => {
             name: newUser.name,
             email: newUser.email,
             role: newUser.role,
-            token // Sent to React for immediate localStorage backup
+            token
         });
     } catch (error) {
         console.error("Register error:", error);
@@ -109,28 +109,29 @@ exports.login = async (req, res) => {
     try {
         const { email, password } = req.body;
 
-        if (!email || !password) {
-            return res.status(400).json({ error: "Email and password are required." });
+        // 1. Safeguard against undefined, null, or non-string inputs before invoking .toLowerCase()
+        if (!email || typeof email !== 'string' || !password) {
+            return res.status(400).json({ error: "Please provide both a valid email and password." });
         }
 
         const normalizedEmail = email.toLowerCase().trim();
 
-        // 1. Check if user exists
+        // 2. Check if user exists
         const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
         if (!user) {
-            return res.status(400).json({ error: "Invalid email or password" });
+            return res.status(400).json({ error: "Invalid email or password." });
         }
 
-        // 2. Check if password matches
+        // 3. Check if password matches
         const isMatch = await bcrypt.compare(password, user.password);
         if (!isMatch) {
-            return res.status(400).json({ error: "Invalid email or password" });
+            return res.status(400).json({ error: "Invalid email or password." });
         }
 
-        // 3. Generate token & set cookie
+        // 4. Generate token & set cookie
         const token = generateTokenAndSetCookie(user.id, user.role, res);
 
-        // 4. Send response payload
+        // 5. Send response payload
         res.status(200).json({
             id: user.id,
             name: user.name,
