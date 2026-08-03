@@ -9,13 +9,12 @@ import {
 import CreateResourceForm from '../components/CreateResourceForm';
 import EmergencyPanel from '../components/EmergencyPanel';
 import ActivityHistory from '../components/ActivityHistory';
-import axios from 'axios';
+import api from '../services/api';
 import toast from 'react-hot-toast'; 
 
 const Dashboard = () => {
     const { user, logout } = useAuth();
     
-    // Defaulting tab state to the custom real-time monitoring deck
     const [activeTab, setActiveTab] = useState('OVERVIEW');
     const [isProfileOpen, setIsProfileOpen] = useState(false);
     const [isUpdating, setIsUpdating] = useState(false);
@@ -41,7 +40,12 @@ const Dashboard = () => {
                 bio: user.bio || ''
             });
             if (user.avatarUrl) {
-                setAvatarPreview(`http://localhost:5001${user.avatarUrl}`);
+                // Dynamically build URL whether local or absolute production upload
+                const backendOrigin = 'https://hopeconnect-6gmo.onrender.com';
+                const fullUrl = user.avatarUrl.startsWith('http') 
+                    ? user.avatarUrl 
+                    : `${backendOrigin}${user.avatarUrl}`;
+                setAvatarPreview(fullUrl);
             }
         }
     }, [user]);
@@ -73,8 +77,8 @@ const Dashboard = () => {
                 multiPartPayload.append('avatar', avatarFile);
             }
 
-            await axios.put('http://localhost:5001/api/auth/profile', multiPartPayload, {
-                withCredentials: true, 
+            // Using configured api instance instead of hardcoded localhost
+            await api.put('/auth/profile', multiPartPayload, {
                 headers: { 
                     Authorization: `Bearer ${token}`,
                     'Content-Type': 'multipart/form-data'
@@ -284,7 +288,7 @@ const Dashboard = () => {
                                             </div>
                                         </div>
                                         <div className="pt-6 mt-6 border-t border-slate-800/50 flex justify-between items-center text-xs text-slate-400">
-                                            <span>API Gateway Node Sync: <strong className="text-slate-300">http://localhost:5001</strong></span>
+                                            <span>API Gateway Node Sync: <strong className="text-slate-300">https://hopeconnect-6gmo.onrender.com/api</strong></span>
                                             <span className="flex items-center gap-1.5"><span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>Data Integrity Verified</span>
                                         </div>
                                     </div>

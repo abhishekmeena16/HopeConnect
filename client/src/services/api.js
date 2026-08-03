@@ -2,8 +2,8 @@
 import axios from 'axios';
 
 const api = axios.create({
-    // Changed from 5000 to 5001 to match your new backend port!
-    baseURL: 'https://hopeconnect-6gmo.onrender.com', 
+    // Included /api at the end to match server route mounting
+    baseURL: 'https://hopeconnect-6gmo.onrender.com/api', 
     withCredentials: true, 
 });
 
