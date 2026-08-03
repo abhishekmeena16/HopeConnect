@@ -1,25 +1,30 @@
 // client/src/components/ProtectedRoute.jsx
-import { Navigate, useLocation } from 'react-router-dom';
+import { Navigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 
-const ProtectedRoute = ({ children, allowedRoles }) => {
+const ProtectedRoute = ({ children }) => {
     const { user, loading } = useAuth();
-    const location = useLocation();
 
+    // 1. Hold navigation until AuthContext finishes checking token status
     if (loading) {
-        return <div className="flex h-screen items-center justify-center">Loading...</div>;
+        return (
+            <div className="min-h-screen bg-[#0B1121] flex items-center justify-center text-white font-sans">
+                <div className="flex items-center gap-3">
+                    <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span className="text-sm font-medium tracking-wider text-slate-400 uppercase">
+                        Authenticating HopeConnect Session...
+                    </span>
+                </div>
+            </div>
+        );
     }
 
+    // 2. If token is invalid or user is null after checking, redirect to login
     if (!user) {
-        // Redirect to login but save the current location they were trying to go to
-        return <Navigate to="/login" state={{ from: location }} replace />;
+        return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
-        // User is logged in but doesn't have the required role
-        return <Navigate to="/unauthorized" replace />;
-    }
-
+    // 3. Render dashboard cleanly once user is confirmed
     return children;
 };
 

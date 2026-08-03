@@ -6,8 +6,7 @@ const api = axios.create({
     withCredentials: true, 
 });
 
-// ─── CRITICAL FIX: AUTOMATICALLY ATTACH JWT BEARER TOKEN ───
-// This guarantees that protected routes (/auth/me, /resources, etc.) pass authentication
+// Automatically attach JWT token to all outgoing requests
 api.interceptors.request.use(
     (config) => {
         const token = localStorage.getItem('token');
@@ -16,9 +15,7 @@ api.interceptors.request.use(
         }
         return config;
     },
-    (error) => {
-        return Promise.reject(error);
-    }
+    (error) => Promise.reject(error)
 );
 
 export default api;
