@@ -5,19 +5,36 @@ const prisma = require('../config/db');
 // 1. Verify if the user is authenticated
 exports.protect = async (req, res, next) => {
     try {
-        const token = req.cookies.jwt;
+        let token = req.cookies?.jwt;
+
+        // Fallback to Bearer token in Authorization header
+        if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer ')) {
+            token = req.headers.authorization.split(' ')[1];
+        }
+
         if (!token) {
             return res.status(401).json({ error: "Unauthorized - No Token Provided" });
         }
 
-        const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        if (!decoded) {
+        const jwtSecret = process.env.JWT_SECRET || 'Abhishek@123';
+        const decoded = jwt.verify(token, jwtSecret);
+        if (!decoded || !decoded.id) {
             return res.status(401).json({ error: "Unauthorized - Invalid Token" });
         }
 
         const user = await prisma.user.findUnique({
             where: { id: decoded.id },
-            select: { id: true, name: true, email: true, role: true, verified: true } // Don't return password
+            select: { 
+                id: true, 
+                name: true, 
+                email: true, 
+                role: true, 
+                verified: true,
+                phone: true,
+                location: true,
+                bio: true,
+                avatarUrl: true
+            }
         });
 
         if (!user) {
@@ -27,7 +44,8 @@ exports.protect = async (req, res, next) => {
         req.user = user;
         next();
     } catch (error) {
-        res.status(500).json({ error: "Internal Server Error" });
+        console.error("Auth middleware error:", error.message);
+        return res.status(401).json({ error: "Unauthorized - Invalid or expired session" });
     }
 };
 

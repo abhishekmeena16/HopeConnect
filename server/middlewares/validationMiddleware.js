@@ -20,9 +20,21 @@ exports.validateRegistration = [
 
 exports.validateResource = [
     body('title').trim().notEmpty().withMessage('Title is required'),
-    body('type').isIn(['FOOD', 'FUNDS', 'MEDICAL_SUPPLY']).withMessage('Invalid resource type'),
-    body('quantity').isInt({ min: 1 }).withMessage('Quantity must be a positive integer'),
-    body('isEmergency').optional().isBoolean().withMessage('isEmergency must be a boolean')
+    body('type').isIn(['FOOD', 'MEDICAL_SUPPLY', 'SHELTER']).withMessage('Invalid resource type. Must be FOOD, MEDICAL_SUPPLY, or SHELTER'),
+    body('quantity').custom((val) => {
+        const num = parseInt(val, 10);
+        if (isNaN(num) || num < 1) {
+            throw new Error('Quantity must be a positive integer');
+        }
+        return true;
+    }),
+    body('location').optional().trim(),
+    body('isEmergency').optional().custom((val) => {
+        if (typeof val === 'boolean' || val === 'true' || val === 'false') {
+            return true;
+        }
+        throw new Error('isEmergency must be a boolean');
+    })
 ];
 
 // 2. Middleware to catch and return validation errors

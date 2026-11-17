@@ -1,30 +1,36 @@
 // client/src/components/ProtectedRoute.jsx
-import { Navigate } from 'react-router-dom';
+import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
+import { HeartHandshake, Loader2 } from 'lucide-react';
 
-const ProtectedRoute = ({ children }) => {
+const ProtectedRoute = ({ children, allowedRoles }) => {
     const { user, loading } = useAuth();
+    const location = useLocation();
 
-    // 1. Hold navigation until AuthContext finishes checking token status
     if (loading) {
         return (
-            <div className="min-h-screen bg-[#0B1121] flex items-center justify-center text-white font-sans">
-                <div className="flex items-center gap-3">
-                    <span className="w-3 h-3 rounded-full bg-emerald-400 animate-ping"></span>
-                    <span className="text-sm font-medium tracking-wider text-slate-400 uppercase">
-                        Authenticating HopeConnect Session...
+            <div className="min-h-screen bg-[#F8FAFC] flex flex-col items-center justify-center text-slate-800 px-4">
+                <div className="w-16 h-16 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center border border-blue-100 shadow-sm mb-5 animate-pulse">
+                    <HeartHandshake size={32} />
+                </div>
+                <div className="flex items-center gap-3 bg-white border border-slate-200 px-5 py-2.5 rounded-full shadow-sm">
+                    <Loader2 size={16} className="text-blue-600 animate-spin" />
+                    <span className="text-xs font-semibold uppercase tracking-wider text-slate-600">
+                        Verifying HopeConnect Credentials...
                     </span>
                 </div>
             </div>
         );
     }
 
-    // 2. If token is invalid or user is null after checking, redirect to login
     if (!user) {
-        return <Navigate to="/login" replace />;
+        return <Navigate to="/login" state={{ from: location }} replace />;
     }
 
-    // 3. Render dashboard cleanly once user is confirmed
+    if (allowedRoles && !allowedRoles.includes(user.role)) {
+        return <Navigate to="/unauthorized" replace />;
+    }
+
     return children;
 };
 

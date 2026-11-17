@@ -6,9 +6,11 @@ const path = require('path');
 const { 
     createResource, 
     getAllResources, 
+    getEmergencyResources,
     updateResourceStatus,
     getActivityHistory,
-    claimResource
+    claimResource,
+    getImpactAnalytics
 } = require('../controllers/resourceController');
 
 const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
@@ -17,9 +19,10 @@ const { validateResource, checkValidationErrors } = require('../middlewares/vali
 const router = express.Router();
 
 // ─── LOCAL STORAGE CONFIGURATION FOR DISPATCH IMAGES ───
+const uploadDir = path.join(__dirname, '../uploads');
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Streams donation photos straight into your server's local uploads folder
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
         cb(null, `resource-${Date.now()}${path.extname(file.originalname)}`);
@@ -28,7 +31,7 @@ const storage = multer.diskStorage({
 
 const upload = multer({ 
     storage,
-    limits: { fileSize: 7 * 1024 * 1024 }, // Enforces a 7MB maximum image upload safety limitation
+    limits: { fileSize: 7 * 1024 * 1024 },
     fileFilter: (req, file, cb) => {
         if (file.mimetype.startsWith('image/')) {
             cb(null, true);
@@ -38,43 +41,36 @@ const upload = multer({
     }
 });
 
-// All logistics actions running through this router require active coordinate authentication
+// All logistics actions require authentication
 router.use(protect);
 
-// ─── CORE RESOURCE LOGISTICS PATHWAYS ───
-
-// GET http://localhost:5001/api/resources
-// Fetches unclaimed active allocations (Fixes the 404 console error)
+// ─── CORE RESOURCE ROUTES ───
 router.get('/', getAllResources);
+router.get('/emergency', getEmergencyResources);
+router.get('/analytics', getImpactAnalytics);
+router.get('/history', getActivityHistory);
 
-// POST http://localhost:5001/api/resources
-// Logs a brand new physical supply entity with local image interception streaming
+// POST /api/resources (Logs new donation)
 router.post(
     '/', 
-    authorizeRoles('INDIVIDUAL_DONOR', 'RESTAURANT', 'HOSPITAL'), 
-    upload.single('image'), // Intercepts the raw photo packet from your React FormData stream
+    authorizeRoles('INDIVIDUAL_DONOR', 'RESTAURANT', 'HOSPITAL', 'ADMIN'), 
+    upload.single('image'), 
     validateResource, 
     checkValidationErrors, 
     createResource
 );
 
-// GET http://localhost:5001/api/resources/history
-// Retrieves the logged audit trail coordinates for the timelines ledger
-router.get('/history', getActivityHistory);
-
-// POST http://localhost:5001/api/resources/:id/claim
-// Express mapping to handle the explicit claim route triggered by your Claim buttons
+// POST /api/resources/:id/claim
 router.post(
     '/:id/claim',
-    authorizeRoles('NGO', 'HOSPITAL', 'OLD_AGE_HOME'),
-    claimResource || updateResourceStatus
+    authorizeRoles('NGO', 'HOSPITAL', 'OLD_AGE_HOME', 'ADMIN'),
+    claimResource
 );
 
-// PUT http://localhost:5001/api/resources/:id/status
-// Retained legacy put action for universal status auditing modifications
+// PUT /api/resources/:id/status (Participant updates delivery state)
 router.put(
     '/:id/status', 
-    authorizeRoles('NGO', 'HOSPITAL', 'OLD_AGE_HOME'), 
+    authorizeRoles('INDIVIDUAL_DONOR', 'RESTAURANT', 'HOSPITAL', 'NGO', 'OLD_AGE_HOME', 'ADMIN'), 
     updateResourceStatus
 );
 

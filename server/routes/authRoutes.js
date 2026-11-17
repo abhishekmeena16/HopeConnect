@@ -10,12 +10,12 @@ const { protect, authorizeRoles } = require('../middlewares/authMiddleware');
 const router = express.Router();
 
 // ─── CONFIGURE STORAGE WORKSPACE FOR MULTIPART AVATARS ───
+const uploadDir = path.join(__dirname, '../uploads');
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
-        cb(null, 'uploads/'); // Saves files into the 'server/uploads' folder
+        cb(null, uploadDir);
     },
     filename: (req, file, cb) => {
-        // Appends timestamp to prevent duplicate name conflicts
         cb(null, `avatar-${Date.now()}${path.extname(file.originalname)}`);
     }
 });

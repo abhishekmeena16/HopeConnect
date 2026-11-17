@@ -49,9 +49,13 @@ model User {
   createdAt DateTime @default(now())
   
   // Relations
-  donations Resource[] @relation("Donor")
-  requests  Resource[] @relation("Beneficiary")
-  logs      AuditLog[]
+  donations         Resource[]   @relation("Donor")
+  requests          Resource[]   @relation("Beneficiary")
+  aidRequests       AidRequest[] @relation("Requester")
+  fulfilledRequests AidRequest[] @relation("Fulfiller")
+  sentMessages      Message[]    @relation("SentMessages")
+  receivedMessages  Message[]    @relation("ReceivedMessages")
+  logs              AuditLog[]
 }
 
 model Resource {
@@ -59,11 +63,15 @@ model Resource {
   title         String
   type          ResourceType
   quantity      Int          
-  location      String       // ─── CRITICAL FIX: Added this missing tracking column ───
+  location      String       
   description   String?
   imageUrl      String?
   status        Status       @default(PENDING)
   isEmergency   Boolean      @default(false) 
+  expiresAt     DateTime?    // Expiration countdown for perishable food & medicines
+  contactPhone  String?      // Logistics direct contact
+  latitude      Float?       // Map coordinates
+  longitude     Float?       // Map coordinates
   
   // Relations
   donorId       String
@@ -72,9 +80,51 @@ model Resource {
   beneficiaryId String?
   beneficiary   User?        @relation("Beneficiary", fields: [beneficiaryId], references: [id])
   
+  messages      Message[]
   createdAt     DateTime     @default(now())
   updatedAt     DateTime     @updatedAt
   logs          AuditLog[]
+}
+
+// Requisitions / Demands posted by NGOs, Hospitals, Shelters
+model AidRequest {
+  id            String       @id @default(uuid())
+  title         String
+  type          ResourceType
+  quantity      Int
+  location      String
+  urgency       String       @default("NORMAL") // NORMAL, HIGH, CRITICAL
+  description   String?
+  status        String       @default("OPEN")   // OPEN, FULFILLED, CANCELLED
+  latitude      Float?
+  longitude     Float?
+  
+  requesterId   String
+  requester     User         @relation("Requester", fields: [requesterId], references: [id])
+  
+  fulfilledById String?
+  fulfilledBy   User?        @relation("Fulfiller", fields: [fulfilledById], references: [id])
+  
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+}
+
+// Logistics & delivery coordination messages between parties
+model Message {
+  id          String    @id @default(uuid())
+  content     String
+  
+  senderId    String
+  sender      User      @relation("SentMessages", fields: [senderId], references: [id])
+  
+  receiverId  String
+  receiver    User      @relation("ReceivedMessages", fields: [receiverId], references: [id])
+  
+  resourceId  String?
+  resource    Resource? @relation(fields: [resourceId], references: [id], onDelete: Cascade)
+  
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
 }
 
 // Immutable table to track resource movement and ensure accountability

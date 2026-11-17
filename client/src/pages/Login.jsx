@@ -1,30 +1,25 @@
 // client/src/pages/Login.jsx
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import api from '../services/api'; 
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 import { 
     Mail, Lock, ShieldCheck, ArrowRight, 
-    Sunrise, Heart, Sparkles 
+    HeartHandshake, Eye, EyeOff, ArrowLeft,
+    CheckCircle2, Sparkles
 } from 'lucide-react';
 
 const Login = () => {
     const navigate = useNavigate();
     const auth = useAuth();
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showPassword, setShowPassword] = useState(false);
 
     const [formData, setFormData] = useState({
         email: '',
         password: ''
     });
-
-    // ─── CRITICAL FIX: NAVIGATE ONLY AFTER USER STATE IS UPDATED ───
-    useEffect(() => {
-        if (auth?.user) {
-            navigate('/dashboard', { replace: true });
-        }
-    }, [auth?.user, navigate]);
 
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -34,9 +29,14 @@ const Login = () => {
         e.preventDefault();
         setIsSubmitting(true);
 
-        const form = e.currentTarget;
-        const email = form.email.value || formData.email;
-        const password = form.password.value || formData.password;
+        const email = formData.email.trim().toLowerCase();
+        const password = formData.password;
+
+        if (!email || !password) {
+            toast.error("Please enter both email and password");
+            setIsSubmitting(false);
+            return;
+        }
 
         try {
             const response = await api.post('/auth/login', { email, password });
@@ -46,10 +46,11 @@ const Login = () => {
             }
 
             if (auth && typeof auth.login === 'function') {
-                auth.login(response.data.user || response.data, response.data.token);
+                auth.login(response.data, response.data.token);
             }
 
-            toast.success('Welcome back to HopeConnect!');
+            toast.success(`Welcome back, ${response.data.name || 'Coordinator'}!`);
+            navigate('/dashboard');
 
         } catch (error) {
             const errorMsg = error.response?.data?.error 
@@ -62,69 +63,94 @@ const Login = () => {
     };
 
     return (
-        <div className="min-h-screen bg-[#0B1121] flex items-stretch text-white font-sans overflow-hidden relative">
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1e293b_1px,transparent_1px),linear-gradient(to_bottom,#1e293b_1px,transparent_1px)] bg-[size:5rem_5rem] opacity-10 pointer-events-none z-0"></div>
+        <div className="min-h-screen bg-[#F8FAFC] flex items-stretch text-slate-800 font-sans selection:bg-blue-600 selection:text-white">
+            
+            {/* ─── LEFT PANEL: EDITORIAL SHOWCASE (Desktop) ─── */}
+            <div className="hidden lg:flex lg:w-1/2 bg-slate-900 text-white relative flex-col justify-between p-12 xl:p-16 overflow-hidden">
+                {/* Ambient glow orbs */}
+                <div className="absolute top-[-100px] left-[-100px] w-[500px] h-[500px] bg-blue-600/15 blur-[120px] rounded-full pointer-events-none"></div>
+                <div className="absolute bottom-[-100px] right-[-100px] w-[450px] h-[450px] bg-amber-500/10 blur-[120px] rounded-full pointer-events-none"></div>
 
-            {/* LEFT PANEL */}
-            <div className="hidden lg:flex lg:w-1/2 bg-[#090d16] relative flex-col justify-between p-16 border-r border-slate-900 overflow-hidden">
-                <div className="absolute top-[-200px] left-[-200px] w-[600px] h-[600px] bg-rose-500/10 blur-[130px] rounded-full pointer-events-none"></div>
-                <div className="absolute bottom-[-150px] right-[-100px] w-[500px] h-[500px] bg-emerald-500/5 blur-[120px] rounded-full pointer-events-none"></div>
-
-                <div className="flex items-center gap-3 relative z-10">
-                    <Sunrise className="text-[#FF3366]" size={36} />
-                    <div className="text-2xl font-black tracking-widest flex items-center gap-1">
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-500 via-purple-500 to-blue-500">HOPE</span>
-                        <span className="text-white">CONNECT</span>
+                {/* Brand */}
+                <Link to="/" className="flex items-center gap-2.5 relative z-10 w-fit group">
+                    <div className="w-10 h-10 rounded-xl bg-blue-600 text-white flex items-center justify-center shadow-lg group-hover:scale-105 transition-transform">
+                        <HeartHandshake size={22} />
                     </div>
-                </div>
+                    <div className="text-xl font-bold tracking-tight font-heading flex items-center gap-1">
+                        <span className="text-white font-black">HOPE</span>
+                        <span className="text-blue-400 font-black">CONNECT</span>
+                    </div>
+                </Link>
 
+                {/* Value deck */}
                 <div className="relative z-10 max-w-lg my-auto space-y-6">
-                    <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-slate-900 border border-slate-800 text-xs font-semibold text-emerald-400 tracking-wide uppercase">
-                        <Sparkles size={12} /> Non-Profit Network Framework
+                    <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-blue-300 border border-white/10 text-xs font-semibold uppercase tracking-wider">
+                        <Sparkles size={12} className="text-amber-400" /> Non-Monetary Resource Pipeline
                     </div>
-                    <h2 className="text-4xl xl:text-5xl font-serif font-black tracking-tight leading-tight">
-                        Optimizing Surplus for <br/>
-                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-rose-400 via-orange-300 to-amber-200 italic font-normal">Direct Local Impact</span>
+                    <h2 className="text-4xl xl:text-5xl font-black font-heading tracking-tight leading-tight">
+                        Powering Real-Time Aid <br/>
+                        <span className="text-transparent bg-clip-text bg-gradient-to-r from-blue-400 via-indigo-300 to-amber-300">
+                            Across Communities
+                        </span>
                     </h2>
-                    <p className="text-slate-400 font-light leading-relaxed text-base xl:text-lg">
-                        Join an ecosystem engineered to strip out waste. Secure asset verification, real-time demand matching pipelines, and full logistics visibility.
+                    <p className="text-slate-300 font-normal leading-relaxed text-base xl:text-lg">
+                        Sign in to monitor active surplus donations, dispatch emergency food crates, or lock matching distribution routes for verified shelters.
                     </p>
 
-                    <div className="pt-6 grid grid-cols-2 gap-4 border-t border-slate-900">
-                        <div className="flex items-center gap-3 p-3 bg-slate-900/40 rounded-xl border border-slate-900">
-                            <ShieldCheck size={20} className="text-emerald-400 shrink-0" />
-                            <span className="text-xs text-slate-300 font-medium tracking-wide">100% Secure Audits</span>
+                    <div className="pt-6 grid grid-cols-2 gap-4 border-t border-slate-800">
+                        <div className="flex items-center gap-3 p-4 bg-slate-800/60 rounded-2xl border border-slate-700/60">
+                            <ShieldCheck size={22} className="text-emerald-400 shrink-0" />
+                            <span className="text-xs text-slate-200 font-semibold leading-tight">Verified Shelter Network</span>
                         </div>
-                        <div className="flex items-center gap-3 p-3 bg-slate-900/40 rounded-xl border border-slate-900">
-                            <Heart size={20} className="text-rose-400 shrink-0" />
-                            <span className="text-xs text-slate-300 font-medium tracking-wide">Direct Resource Routes</span>
+                        <div className="flex items-center gap-3 p-4 bg-slate-800/60 rounded-2xl border border-slate-700/60">
+                            <CheckCircle2 size={22} className="text-blue-400 shrink-0" />
+                            <span className="text-xs text-slate-200 font-semibold leading-tight">Instant Audit Trail</span>
                         </div>
                     </div>
                 </div>
 
-                <p className="text-xs text-slate-600 relative z-10">
-                    © 2026 HopeConnect Infrastructure. Fully non-monetary supply operations.
-                </p>
+                <div className="flex items-center justify-between text-xs text-slate-400 relative z-10">
+                    <p>© 2026 HopeConnect Network.</p>
+                    <Link to="/" className="text-slate-300 hover:text-white flex items-center gap-1 transition">
+                        <ArrowLeft size={14} /> Back to Homepage
+                    </Link>
+                </div>
             </div>
 
-            {/* RIGHT PANEL */}
-            <div className="w-full lg:w-1/2 flex items-center justify-center p-8 md:p-12 relative z-10">
-                <div className="w-full max-w-md space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
+            {/* ─── RIGHT PANEL: CLEAN LOGIN CARD ─── */}
+            <div className="w-full lg:w-1/2 flex items-center justify-center p-6 sm:p-12 md:p-16 relative min-h-screen">
+                
+                {/* Mobile Top Header */}
+                <div className="absolute top-6 left-6 right-6 lg:hidden flex items-center justify-between">
+                    <Link to="/" className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-lg bg-blue-600 text-white flex items-center justify-center">
+                            <HeartHandshake size={18} />
+                        </div>
+                        <span className="font-bold text-sm text-slate-900 font-heading">HOPECONNECT</span>
+                    </Link>
+                    <Link to="/" className="text-xs text-slate-500 hover:text-slate-800 flex items-center gap-1 font-semibold">
+                        <ArrowLeft size={14} /> Home
+                    </Link>
+                </div>
+
+                <div className="w-full max-w-md space-y-8 pt-12 lg:pt-0">
                     <div>
-                        <h1 className="text-3xl font-serif font-extrabold tracking-tight mb-2">Welcome back</h1>
-                        <p className="text-sm text-slate-400 font-light">
-                            New to the coordinator network?{' '}
-                            <Link to="/register" className="text-emerald-400 font-medium hover:text-emerald-300 transition-colors underline underline-offset-4">
-                                Create an account here
+                        <h1 className="text-3xl sm:text-4xl font-black font-heading text-slate-900 tracking-tight mb-2">Welcome Back</h1>
+                        <p className="text-sm text-slate-500 font-normal">
+                            New coordinator or donor?{' '}
+                            <Link to="/register" className="text-blue-600 font-semibold hover:text-blue-700 underline underline-offset-4">
+                                Register your account
                             </Link>
                         </p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
+                        
+                        {/* 1. Email Input */}
                         <div>
-                            <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Email Address</label>
+                            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">Email Address</label>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
                                     <Mail size={18} />
                                 </div>
                                 <input 
@@ -135,45 +161,62 @@ const Login = () => {
                                     value={formData.email}
                                     onChange={handleChange}
                                     placeholder="name@organization.org" 
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors shadow-inner"
+                                    className="w-full pl-11 pr-4 py-3.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition shadow-xs"
                                 />
                             </div>
                         </div>
 
+                        {/* 2. Password Input */}
                         <div>
                             <div className="flex justify-between items-center mb-2">
-                                <label className="block text-xs font-bold text-slate-400 uppercase tracking-wider">Account Password</label>
+                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">Account Password</label>
                             </div>
                             <div className="relative group">
-                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-500 group-focus-within:text-emerald-400 transition-colors">
+                                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-slate-400 group-focus-within:text-blue-600 transition-colors">
                                     <Lock size={18} />
                                 </div>
                                 <input 
-                                    type="password" 
+                                    type={showPassword ? "text" : "password"} 
                                     name="password"
                                     id="password"
                                     required 
                                     value={formData.password}
                                     onChange={handleChange}
                                     placeholder="••••••••••••" 
-                                    className="w-full pl-11 pr-4 py-3.5 bg-slate-950/40 border border-slate-800 rounded-xl text-white placeholder-slate-500 focus:outline-none focus:border-emerald-500 focus:ring-1 focus:ring-emerald-500 transition-colors shadow-inner"
+                                    className="w-full pl-11 pr-11 py-3.5 bg-white border border-slate-200 rounded-xl text-slate-900 placeholder-slate-400 text-sm focus:outline-none focus:border-blue-600 focus:ring-4 focus:ring-blue-100 transition shadow-xs"
                                 />
+                                <button 
+                                    type="button" 
+                                    onClick={() => setShowPassword(!showPassword)}
+                                    className="absolute inset-y-0 right-0 pr-4 flex items-center text-slate-400 hover:text-slate-600 focus:outline-none"
+                                    aria-label="Toggle password visibility"
+                                >
+                                    {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+                                </button>
                             </div>
                         </div>
 
-                        <div className="pt-3">
+                        {/* 3. Submit Button */}
+                        <div className="pt-2">
                             <button 
                                 type="submit" 
                                 disabled={isSubmitting}
-                                className="w-full bg-gradient-to-r from-rose-500 via-purple-600 to-blue-600 hover:opacity-95 text-white font-bold py-4 rounded-xl shadow-[0_4px_25px_rgba(244,63,94,0.15)] transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group disabled:opacity-50 disabled:cursor-not-allowed"
+                                className="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 rounded-xl shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 flex items-center justify-center gap-2 group disabled:opacity-50 text-sm"
                             >
-                                {isSubmitting ? 'Authenticating Access...' : 'Authenticate Access'}
+                                {isSubmitting ? 'Authenticating...' : 'Sign In To Operations Deck'}
                                 {!isSubmitting && <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />}
                             </button>
                         </div>
                     </form>
+
+                    {/* Test credentials helper */}
+                    <div className="p-4 bg-slate-100/80 rounded-2xl border border-slate-200 text-xs text-slate-600 leading-relaxed text-center">
+                        <span className="font-bold text-slate-800">Quick Test Credentials:</span><br />
+                        NGO Shelter: <code className="text-blue-700 font-semibold">helpindia@org.in</code> • Donor: <code className="text-blue-700 font-semibold">daru@gmail.com</code>
+                    </div>
                 </div>
             </div>
+
         </div>
     );
 };
